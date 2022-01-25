@@ -5,7 +5,7 @@ const app = require('../lib/app');
 const Order = require('../lib/models/Order');
 
 // TODO: Remove this function & use the Order model
-async function createOrder({ product, quantity }) {
+/*async function createOrder({ product, quantity }) {
   const { rows } = await pool.query(
     'INSERT INTO orders(product, quantity) VALUES ($1, $2) RETURNING *;',
     [product, quantity]
@@ -24,7 +24,7 @@ async function getOrderById(id) {
 
   return new Order(rows[0]);
 }
-
+*/
 describe('refactory routes', () => {
   beforeEach(() => {
     return setup(pool);
@@ -45,29 +45,52 @@ describe('refactory routes', () => {
       quantity: 1,
     });
   });
-
+  
   it('should be able to list an order by id', async () => {
-    const order = await createOrder({ product: 'Widget', quantity: 1 });
+    const order = await Order.insert({
+      product: 'chairs',
+      quantity: 8,
+    });
+
     const res = await request(app).get(`/api/v1/orders/${order.id}`);
 
     expect(res.body).toEqual(order);
   });
 
   it('should be able to list orders', async () => {
-    await createOrder({ product: 'Widget', quantity: 1 });
+    // eslint-disable-next-line no-unused-vars
+    await Order.insert({
+      product: 'chairs',
+      quantity: 8,
+    });
+    await Order.insert({
+      product: 'tables',
+      quantity: 6,
+      
+    });
     const res = await request(app).get('/api/v1/orders');
 
     expect(res.body).toEqual([
       {
         id: expect.any(String),
-        product: 'Widget',
-        quantity: 1,
+        product: 'chairs',
+        quantity: 8,
       },
+      {
+        id: expect.any(String),
+        product: 'tables',
+        quantity: 6,
+      
+      }
     ]);
   });
 
   it('should be able to update an order', async () => {
-    const order = await createOrder({ product: 'Widget', quantity: 1 });
+    const order = await Order.insert({
+      product: 'pencils',
+      quantity: 9,
+    });
+
     const res = await request(app)
       .patch(`/api/v1/orders/${order.id}`)
       .send({ product: 'Thingamajig', quantity: 2 });
@@ -79,14 +102,17 @@ describe('refactory routes', () => {
     };
 
     expect(res.body).toEqual(expected);
-    expect(await getOrderById(order.id)).toEqual(expected);
   });
 
   it('should be able to delete an order', async () => {
-    const order = await createOrder({ product: 'Widget', quantity: 1 });
+    const order = await Order.insert({
+      product: 'chairs',
+      quantity: 9,
+    });
     const res = await request(app).delete(`/api/v1/orders/${order.id}`);
 
     expect(res.body).toEqual(order);
-    expect(await getOrderById(order.id)).toBeNull();
+    expect(await Order.getById(order.id)).toBeNull();
+    
   });
 });
